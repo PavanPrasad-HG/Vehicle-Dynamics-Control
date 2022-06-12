@@ -4,7 +4,7 @@
 % Use and distribution of this material outside the RO47017 course 
 % only with the permission of the course coordinator
 clc; clear; clear mex;
-
+set(groot, 'defaultAxesTickLabelInterpreter','latex'); set(groot, 'defaultLegendInterpreter','latex');
 %% Non-tunable parameters
 par.g = 9.81;
 par.Vinit   = 50 /3.6;              % initialization velocity, Don't TUNE
@@ -22,7 +22,6 @@ par.m_r      = par.mass * par.l_f / par.L;      % rear sprung mass, kg
 par.mu       = 1;                   % friction coefficient
 %% Tunable parameters
 % Reference Generator
-
 par.Calpha_front = 120000;          % front axle cornering stiffness
 par.Calpha_rear  = 190000;          % rear axle cornering stiffness
 par.Kus = par.m_f/par.Calpha_front - par.m_r/par.Calpha_rear; % understeer gradient
@@ -30,11 +29,10 @@ par.Kus = par.m_f/par.Calpha_front - par.m_r/par.Calpha_rear; % understeer gradi
 par.wn      = 11;                   % yaw rate frequency
 par.kseta   = 0.7;                  % yaw rate damping
 par.tau     = 0.09;                 % yaw rate time constant
-
 %% Change V_kmph as you prefer
 
 % Maneuver settings
-% V_kmph = 60; % pre-maneuver speed, km/h
+
 V_kmph = 100; % pre-maneuver speed, km/h
 
 V_ref = V_kmph /3.6;                % pre-maneuver speed, m/s
@@ -69,28 +67,30 @@ LQR_K = zeros(n_points,2);
 for i = 1:length(LQR_Vx_ref)
 Vx = LQR_Vx_ref(i);
 
-B_lqr = [par.Calpha_front/par.mass ; par.l_f*par.Calpha_front/par.Izz];
+%B_lqr = [par.Calpha_front/par.mass 0; par.l_f*par.Calpha_front/par.Izz 1/par.Izz];
+B_lqr = [0;1/par.Izz];
 A_lqr = [-A11/(par.mass * Vx), (A21/(par.mass * Vx))-Vx; (A21/(par.Izz* Vx)), -A22/(par.Izz* Vx)];
 
-R = Vx;
-Q = diag([10^3.2,10^2]);
+R = diag([Vx]);
+Q = diag([10^-5,5*10^13]);
+%Q = diag([10^4,10^2]);
 LQR_K(i,:) = lqr(A_lqr,B_lqr,Q,R); % LQR gain
 end
 
-LQR_K = LQR_K'*10;
+LQR_K = LQR_K';
 
 ay_max = par.mu*par.g; %limit on lateral acceleration to saturate beta
-
+%% PD Control
 % Running LQR
-% sim('HW2_LQR.slx')
+sim('GP_PD.slx')
 
-%% Plots - LQR
+%  Plots - Beta Sat
 
 figure(1)
 plot(ref_yaw,'b--')
 hold on
 plot(yaw_lqr,'r')
-title(sprintf('Yaw Rate vs Reference - LQR Control- %0.0f km/h',V_kmph))
+title(sprintf('Yaw Rate vs Reference - PD Control of Sideslip Angle - %0.0f km/h',V_kmph),'Interpreter','latex')
 xlabel('Time(s)'), ylabel('Yaw Rate(rad/s)')
 legend('Reference Yaw Rate','Actual Yaw Rate')
 
@@ -102,17 +102,91 @@ min(yaw_lqr.Data)
 
 figure(2)
 plot(long_vel)
-title(sprintf('Longitudinal Velocity - LQR control- Reference velocity %0.0f km/h',V_kmph))
+title(sprintf('Longitudinal Velocity - PD Control of Sideslip Angle - Reference velocity %0.0f km/h',V_kmph),'Interpreter','latex')
 xlabel('Time(s)'), ylabel('Longitudinal Velocity (km/h)')
 
 figure(3)
 plot(lat_acc_lqr)
-title(sprintf('Lateral Acceleration - LQR control - Reference velocity %0.0f km/h',V_kmph))
+title(sprintf('Lateral Acceleration - PD Control of Sideslip Angle - Reference velocity %0.0f km/h',V_kmph),'Interpreter','latex')
 xlabel('Time(s)'), ylabel('Lateral Acceleration (m/s^2)')
 
 figure(4)
 plot(beta_lqr)
-title(sprintf('Body Sideslip Angle - LQR control - Reference velocity %0.0f km/h',V_kmph))
+title(sprintf('Body Sideslip Angle - PD Control of Sideslip Angle - Reference velocity %0.0f km/h',V_kmph),'Interpreter','latex')
+xlabel('Time(s)'), ylabel('Body Sideslip Angle (deg)')
+
+max(abs(beta_lqr.Data))
+%% Ref Correction
+% Running LQR
+
+sim('GP_ref_correction.slx')
+
+% Plots - Ref Correction
+
+figure(5)
+plot(ref_yaw,'b--')
+hold on
+plot(yaw_lqr,'r')
+title(sprintf('Yaw Rate vs Reference - Reference Correction - %0.0f km/h',V_kmph))
+xlabel('Time(s)'), ylabel('Yaw Rate(rad/s)')
+legend('Reference Yaw Rate','Actual Yaw Rate')
+
+max(ref_yaw.Data)
+min(ref_yaw.Data)
+
+max(yaw_lqr.Data)
+min(yaw_lqr.Data)
+
+figure(6)
+plot(long_vel)
+title(sprintf('Longitudinal Velocity - Reference Correction - Reference velocity %0.0f km/h',V_kmph))
+xlabel('Time(s)'), ylabel('Longitudinal Velocity (km/h)')
+
+figure(7)
+plot(lat_acc_lqr)
+title(sprintf('Lateral Acceleration - Reference Correction - Reference velocity %0.0f km/h',V_kmph))
+xlabel('Time(s)'), ylabel('Lateral Acceleration (m/s^2)')
+
+figure(8)
+plot(beta_lqr)
+title(sprintf('Body Sideslip Angle - Reference Correction - Reference velocity %0.0f km/h',V_kmph))
+xlabel('Time(s)'), ylabel('Body Sideslip Angle (deg)')
+
+max(abs(beta_lqr.Data))
+
+%% Beta Sat
+% Running LQR
+sim('GP_beta_saturation.slx')
+
+%  Plots - Beta Sat
+
+figure(9)
+plot(ref_yaw,'b--')
+hold on
+plot(yaw_lqr,'r')
+title(sprintf('Yaw Rate vs Reference - Saturation of Sideslip Angle - %0.0f km/h',V_kmph),'Interpreter','latex')
+xlabel('Time(s)'), ylabel('Yaw Rate(rad/s)')
+legend('Reference Yaw Rate','Actual Yaw Rate')
+
+max(ref_yaw.Data)
+min(ref_yaw.Data)
+
+max(yaw_lqr.Data)
+min(yaw_lqr.Data)
+
+figure(10)
+plot(long_vel)
+title(sprintf('Longitudinal Velocity - Saturation of Sideslip Angle - Reference velocity %0.0f km/h',V_kmph),'Interpreter','latex')
+xlabel('Time(s)'), ylabel('Longitudinal Velocity (km/h)')
+
+figure(11)
+plot(lat_acc_lqr)
+title(sprintf('Lateral Acceleration - Saturation of Sideslip Angle - Reference velocity %0.0f km/h',V_kmph),'Interpreter','latex')
+xlabel('Time(s)'), ylabel('Lateral Acceleration (m/s^2)')
+
+figure(12)
+plot(beta_lqr)
+title(sprintf('Body Sideslip Angle - Saturation of Sideslip Angle - Reference velocity %0.0f km/h',V_kmph),'Interpreter','latex')
 xlabel('Time(s)'), ylabel('Body Sideslip Angle (deg)')
 
 max(abs(beta_lqr.Data))
@@ -125,5 +199,4 @@ xi =  0.5;
 K1 = -par.Izz*2e3;
 K2 = -par.Izz*2e2;
 
-beta_max = 0.5*atan(0.02*par.mu*par.g);
-
+beta_max = atan(0.02*par.mu*par.g);
