@@ -19,7 +19,7 @@ par.i_steer  = 15.4;                % steering ratio
 % Additional
 par.m_f      = par.mass * par.l_r / par.L;      % front sprung mass, kg
 par.m_r      = par.mass * par.l_f / par.L;      % rear sprung mass, kg
-par.mu       = 1;                   % friction coefficient
+par.mu       = 0.3;                   % friction coefficient
 %% Tunable parameters
 % Reference Generator
 par.Calpha_front = 120000;          % front axle cornering stiffness
@@ -56,7 +56,7 @@ A11 = (par.Calpha_front + par.Calpha_rear);
 A21 = -par.l_f*par.Calpha_front + par.l_r*par.Calpha_rear; 
 A22 = par.l_f^2 * par.Calpha_front + par.l_r^2 * par.Calpha_rear;
 
-n_points = 20; % number of data points
+n_points = 60; % number of data points
 
 LQR_Vx_ref = linspace(10,V_kmph,n_points)/3.6; % longitudinal speed, km/h
 
@@ -72,7 +72,7 @@ B_lqr = [0;1/par.Izz];
 A_lqr = [-A11/(par.mass * Vx), (A21/(par.mass * Vx))-Vx; (A21/(par.Izz* Vx)), -A22/(par.Izz* Vx)];
 
 R = diag([Vx]);
-Q = diag([10^-5,5*10^13]);
+Q = diag([10^0,5*10^13]);
 %Q = diag([10^4,10^2]);
 LQR_K(i,:) = lqr(A_lqr,B_lqr,Q,R); % LQR gain
 end
@@ -189,14 +189,69 @@ plot(beta_lqr)
 title(sprintf('Body Sideslip Angle - Saturation of Sideslip Angle - Reference velocity %0.0f km/h',V_kmph),'Interpreter','latex')
 xlabel('Time(s)'), ylabel('Body Sideslip Angle (deg)')
 
-max(abs(beta_lqr.Data))
+max(abs(beta_sat.Data))
 
-%% Sliding Mode State Space
+%%
 
-K = par.mass*((par.l_r*par.Calpha_rear) - (par.l_f*par.Calpha_front))/(2*par.Calpha_front*par.Calpha_rear*par.L*par.L) ;
+[I1,J1]=find(ydist_pd.Time==11.07);
+[I2,J2]=find(ydist_ref.Time==11.07);
+[I3,J3]=find(ydist_sat.Time==11.07);
 
-xi =  0.5;
-K1 = -par.Izz*2e3;
-K2 = -par.Izz*2e2;
+disp("[PD] Y distance after 1.07 sec is " + ydist_pd.Data(I1));
+disp("[PD] Yaw Velocity Metric is " + yaw_velocity_metric_pd.Data(end));
+disp("[PD] Max.Sideslip Angle is " + max(abs(beta_pd.Data)));
 
-beta_max = atan(0.02*par.mu*par.g);
+disp("[Reference Correction]] Y distance after 1.07 sec is " + ydist_ref.Data(I2));
+disp("[Reference Correction]] Yaw Velocity Metric is " + yaw_velocity_metric_ref.Data(end));
+disp("[Reference Correction]] Max.Sideslip Angle is " + max(abs(beta_ref.Data)));
+
+disp("[Beta Saturation] Y distance after 1.07 sec is " + ydist_sat.Data(I3));
+disp("[Beta Saturation] Yaw Velocity Metric is " + yaw_velocity_metric_sat.Data(end));
+disp("[Beta Saturation] Max.Sideslip Angle is "+ max(abs(beta_sat.Data)));
+%% Plots
+
+% PD Control
+figure(3)
+plot(ref_yaw_pd,'b--')
+hold on
+plot(yaw_pd,'r')
+title(sprintf('Yaw Rate vs Reference - PD Control - %0.0f km/h',V_kmph),'Interpreter','latex')
+xlabel('Time(s)'), ylabel('Yaw Rate(rad/s)')
+legend('Reference Yaw Rate','Actual Yaw Rate')
+
+figure(4)
+plot(beta_pd)
+title(sprintf('Body Sideslip Angle - PD Control - Reference velocity %0.0f km/h',V_kmph))
+xlabel('Time(s)'), ylabel('Body Sideslip Angle (deg)')
+
+% Ref Corr
+figure(3)
+plot(ref_yaw_pd,'g--')
+hold on
+plot(ref_yaw_ref,'b--')
+hold on
+plot(yaw_ref,'r')
+title(sprintf('Yaw Rate vs Reference - Reference Correction - %0.0f km/h',V_kmph),'Interpreter','latex')
+xlabel('Time(s)'), ylabel('Yaw Rate(rad/s)')
+legend('Reference Yaw Rate without Correction','Reference Yaw Rate','Actual Yaw Rate')
+
+figure(4)
+plot(beta_ref)
+title(sprintf('Body Sideslip Angle - Reference Correction - Reference velocity %0.0f km/h',V_kmph))
+xlabel('Time(s)'), ylabel('Body Sideslip Angle (deg)')
+
+% Saturation
+figure(5)
+plot(ref_yaw_pd,'g--')
+hold on
+plot(ref_sat,'b--')
+hold on
+plot(yaw_sat,'r')
+title(sprintf('Yaw Rate vs Reference - Saturation of Sideslip Angle - %0.0f km/h',V_kmph),'Interpreter','latex')
+xlabel('Time(s)'), ylabel('Yaw Rate(rad/s)')
+legend('Reference Yaw Rate without Correction','Reference Yaw Rate','Actual Yaw Rate')
+
+figure(6)
+plot(beta_sat)
+title(sprintf('Body Sideslip Angle - Saturation of Sideslip Angle - Reference velocity %0.0f km/h',V_kmph),'Interpreter','latex')
+xlabel('Time(s)'), ylabel('Body Sideslip Angle (deg)')
