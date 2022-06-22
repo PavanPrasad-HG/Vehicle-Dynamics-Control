@@ -87,35 +87,23 @@ sim('GP_PD.slx')
 %  Plots - Beta Sat
 
 figure(1)
-plot(ref_yaw,'b--')
+plot(ref_yaw_pd,'b--')
 hold on
-plot(yaw_lqr,'r')
-title(sprintf('Yaw Rate vs Reference - PD Control of Sideslip Angle - %0.0f km/h',V_kmph),'Interpreter','latex')
+plot(yaw_pd,'r')
+title(sprintf('Yaw Rate vs Reference - PD Control - %0.0f km/h',V_kmph),'Interpreter','latex')
 xlabel('Time(s)'), ylabel('Yaw Rate(rad/s)')
 legend('Reference Yaw Rate','Actual Yaw Rate')
 
-max(ref_yaw.Data)
-min(ref_yaw.Data)
-
-max(yaw_lqr.Data)
-min(yaw_lqr.Data)
-
 figure(2)
-plot(long_vel)
-title(sprintf('Longitudinal Velocity - PD Control of Sideslip Angle - Reference velocity %0.0f km/h',V_kmph),'Interpreter','latex')
-xlabel('Time(s)'), ylabel('Longitudinal Velocity (km/h)')
+plot(beta_pd)
+title(sprintf('Body Sideslip Angle - PD Control - Reference velocity %0.0f km/h',V_kmph))
+xlabel('Time(s)'), ylabel('Body Sideslip Angle (deg)')
 
 figure(3)
-plot(lat_acc_lqr)
+plot(lat_acc_pd)
 title(sprintf('Lateral Acceleration - PD Control of Sideslip Angle - Reference velocity %0.0f km/h',V_kmph),'Interpreter','latex')
 xlabel('Time(s)'), ylabel('Lateral Acceleration (m/s^2)')
 
-figure(4)
-plot(beta_lqr)
-title(sprintf('Body Sideslip Angle - PD Control of Sideslip Angle - Reference velocity %0.0f km/h',V_kmph),'Interpreter','latex')
-xlabel('Time(s)'), ylabel('Body Sideslip Angle (deg)')
-
-max(abs(beta_lqr.Data))
 %% Ref Correction
 % Running LQR
 
@@ -123,36 +111,28 @@ sim('GP_ref_correction.slx')
 
 % Plots - Ref Correction
 
-figure(5)
-plot(ref_yaw,'b--')
+% Ref Corr
+figure(4)
+plot(ref_yaw_pd,'k--')
 hold on
-plot(yaw_lqr,'r')
+plot(ref_yaw_ref,'b--')
+hold on
+plot(yaw_ref,'r')
 title(sprintf('Yaw Rate vs Reference - Reference Correction - %0.0f km/h',V_kmph))
 xlabel('Time(s)'), ylabel('Yaw Rate(rad/s)')
-legend('Reference Yaw Rate','Actual Yaw Rate')
+legend('Reference Yaw Rate without Correction','Reference Yaw Rate','Actual Yaw Rate')
+hold off
 
-max(ref_yaw.Data)
-min(ref_yaw.Data)
-
-max(yaw_lqr.Data)
-min(yaw_lqr.Data)
-
-figure(6)
-plot(long_vel)
-title(sprintf('Longitudinal Velocity - Reference Correction - Reference velocity %0.0f km/h',V_kmph))
-xlabel('Time(s)'), ylabel('Longitudinal Velocity (km/h)')
-
-figure(7)
-plot(lat_acc_lqr)
-title(sprintf('Lateral Acceleration - Reference Correction - Reference velocity %0.0f km/h',V_kmph))
-xlabel('Time(s)'), ylabel('Lateral Acceleration (m/s^2)')
-
-figure(8)
-plot(beta_lqr)
+figure(5)
+plot(beta_ref)
 title(sprintf('Body Sideslip Angle - Reference Correction - Reference velocity %0.0f km/h',V_kmph))
 xlabel('Time(s)'), ylabel('Body Sideslip Angle (deg)')
 
-max(abs(beta_lqr.Data))
+figure(6)
+plot(lat_acc_ref)
+title(sprintf('Lateral Acceleration - Reference Correction - Reference velocity %0.0f km/h',V_kmph))
+xlabel('Time(s)'), ylabel('Lateral Acceleration (m/s^2)')
+
 
 %% Beta Sat
 % Running LQR
@@ -160,36 +140,26 @@ sim('GP_beta_saturation.slx')
 
 %  Plots - Beta Sat
 
-figure(9)
-plot(ref_yaw,'b--')
+% Saturation
+figure(7)
+plot(ref_yaw_pd,'k--')
 hold on
-plot(yaw_lqr,'r')
+plot(ref_sat,'b--')
+hold on
+plot(yaw_sat,'r')
 title(sprintf('Yaw Rate vs Reference - Saturation of Sideslip Angle - %0.0f km/h',V_kmph),'Interpreter','latex')
 xlabel('Time(s)'), ylabel('Yaw Rate(rad/s)')
-legend('Reference Yaw Rate','Actual Yaw Rate')
+legend('Reference Yaw Rate without Correction','Reference Yaw Rate','Actual Yaw Rate')
 
-max(ref_yaw.Data)
-min(ref_yaw.Data)
-
-max(yaw_lqr.Data)
-min(yaw_lqr.Data)
-
-figure(10)
-plot(long_vel)
-title(sprintf('Longitudinal Velocity - Saturation of Sideslip Angle - Reference velocity %0.0f km/h',V_kmph),'Interpreter','latex')
-xlabel('Time(s)'), ylabel('Longitudinal Velocity (km/h)')
-
-figure(11)
-plot(lat_acc_lqr)
-title(sprintf('Lateral Acceleration - Saturation of Sideslip Angle - Reference velocity %0.0f km/h',V_kmph),'Interpreter','latex')
-xlabel('Time(s)'), ylabel('Lateral Acceleration (m/s^2)')
-
-figure(12)
-plot(beta_lqr)
+figure(8)
+plot(beta_sat)
 title(sprintf('Body Sideslip Angle - Saturation of Sideslip Angle - Reference velocity %0.0f km/h',V_kmph),'Interpreter','latex')
 xlabel('Time(s)'), ylabel('Body Sideslip Angle (deg)')
 
-max(abs(beta_sat.Data))
+figure(9)
+plot(lat_acc_sat)
+title(sprintf('Lateral Acceleration - Saturation of Sideslip Angle - Reference velocity %0.0f km/h',V_kmph),'Interpreter','latex')
+xlabel('Time(s)'), ylabel('Lateral Acceleration (m/s^2)')
 
 %%
 
@@ -208,50 +178,3 @@ disp("[Reference Correction]] Max.Sideslip Angle is " + max(abs(beta_ref.Data)))
 disp("[Beta Saturation] Y distance after 1.07 sec is " + ydist_sat.Data(I3));
 disp("[Beta Saturation] Yaw Velocity Metric is " + yaw_velocity_metric_sat.Data(end));
 disp("[Beta Saturation] Max.Sideslip Angle is "+ max(abs(beta_sat.Data)));
-%% Plots
-
-% PD Control
-figure(3)
-plot(ref_yaw_pd,'b--')
-hold on
-plot(yaw_pd,'r')
-title(sprintf('Yaw Rate vs Reference - PD Control - %0.0f km/h',V_kmph),'Interpreter','latex')
-xlabel('Time(s)'), ylabel('Yaw Rate(rad/s)')
-legend('Reference Yaw Rate','Actual Yaw Rate')
-
-figure(4)
-plot(beta_pd)
-title(sprintf('Body Sideslip Angle - PD Control - Reference velocity %0.0f km/h',V_kmph))
-xlabel('Time(s)'), ylabel('Body Sideslip Angle (deg)')
-
-% Ref Corr
-figure(3)
-plot(ref_yaw_pd,'g--')
-hold on
-plot(ref_yaw_ref,'b--')
-hold on
-plot(yaw_ref,'r')
-title(sprintf('Yaw Rate vs Reference - Reference Correction - %0.0f km/h',V_kmph),'Interpreter','latex')
-xlabel('Time(s)'), ylabel('Yaw Rate(rad/s)')
-legend('Reference Yaw Rate without Correction','Reference Yaw Rate','Actual Yaw Rate')
-
-figure(4)
-plot(beta_ref)
-title(sprintf('Body Sideslip Angle - Reference Correction - Reference velocity %0.0f km/h',V_kmph))
-xlabel('Time(s)'), ylabel('Body Sideslip Angle (deg)')
-
-% Saturation
-figure(5)
-plot(ref_yaw_pd,'g--')
-hold on
-plot(ref_sat,'b--')
-hold on
-plot(yaw_sat,'r')
-title(sprintf('Yaw Rate vs Reference - Saturation of Sideslip Angle - %0.0f km/h',V_kmph),'Interpreter','latex')
-xlabel('Time(s)'), ylabel('Yaw Rate(rad/s)')
-legend('Reference Yaw Rate without Correction','Reference Yaw Rate','Actual Yaw Rate')
-
-figure(6)
-plot(beta_sat)
-title(sprintf('Body Sideslip Angle - Saturation of Sideslip Angle - Reference velocity %0.0f km/h',V_kmph),'Interpreter','latex')
-xlabel('Time(s)'), ylabel('Body Sideslip Angle (deg)')
